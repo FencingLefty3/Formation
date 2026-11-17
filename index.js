@@ -1,12 +1,3 @@
-
-
-
-
-
-
-
-
-
 const $ = (id) => document.getElementById(id);
 
 const tempBox = $('tempBox');
@@ -15,6 +6,35 @@ const flagBG = $('flagBG');
 let hourlyUrl = null;
 
 const FLAG_COLORS = { green: '#1dd284', yellow: '#d2cc1d', red: '#d22c1d', blue: '#3b5f8f', white: '#f5f5f7', black: '#222' };
+
+
+async function getLocationFromCoords(lat, lon) {
+  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Reverse geocoding error: ${response.status}`);
+    const data = await response.json();
+    
+    const city = data.address?.city || data.address?.town || data.address?.village || '';
+    const state = data.address?.state || '';
+    
+    // Return a clean string instead of the whole object
+    return city && state ? `${city}, ${state}` : data.display_name;
+  } catch (error) {
+    console.error("Reverse geocoding failed:", error);
+    return "Unknown Location";
+  }
+}
+
+function getLocation() {
+  return new Promise((resolve, reject) => {
+    if (!("geolocation" in navigator)) {
+      reject("Geolocation not supported");
+    }
+    navigator.geolocation.getCurrentPosition(resolve, reject);
+  });
+}
 
 function doubleYellow() {
     clearFlag();
@@ -46,9 +66,12 @@ function setFlag(name) {
 }
 
 async function update() {
+    const position = await getLocation();
+    const lat = position.coords.latitude;
+    const lon = position.coords.longitude;
     try {
-        const now = await getCurrentWeather(40.5587436,-120.7709412);
-
+        const now = await getCurrentWeather(lat,lon);
+        $('location').textContent = await getLocationFromCoords(lat, lon);
         $('currentTemp').textContent = `${now.temperature}°`;
         $('conditions').textContent = now.shortForecast;
         setFlag(flagFor(now.shortForecast));
