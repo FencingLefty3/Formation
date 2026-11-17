@@ -4,28 +4,29 @@ const tempBox = $('tempBox');
 const flagBG = $('flagBG');
 
 let hourlyUrl = null;
+let locationName = '';
 
 const FLAG_COLORS = { green: '#1dd284', yellow: '#d2cc1d', red: '#d22c1d', blue: '#3b5f8f', white: '#f5f5f7', black: '#222' };
 
-
-async function getLocationFromCoords(lat, lon) {
-  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
-
-  try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`Reverse geocoding error: ${response.status}`);
-    const data = await response.json();
-    
-    const city = data.address?.city || data.address?.town || data.address?.village || '';
-    const state = data.address?.state || '';
-    
-    // Return a clean string instead of the whole object
-    return city && state ? `${city}, ${state}` : data.display_name;
-  } catch (error) {
-    console.error("Reverse geocoding failed:", error);
-    return "Unknown Location";
-  }
+const cache = {
+    get(key) {
+        try {
+            const raw = localStorage.getItem(key);
+            if (!raw) return null;
+            const { t, v } = JSON.parse(raw)
+            return { value: v, age: Date.now() - t }
+        } catch { return null }
+    },
+    set(key, value) {
+        try { localStorage.setItem(key, JSON.stringify({ t: Date.now(), v: value }))}
+        catch { }
+    }
 }
+
+const WEATHER_TTL = 10 * 60 * 1000;                
+const LONG_TTL    = 30 * 24 * 60 * 60 * 1000;
+
+const keyFor = (prefix, lat, lon) => `${prefix}:${lat.toFixed(2)},${lon.toFixed(2)}`;
 
 function getLocation() {
   return new Promise((resolve, reject) => {
@@ -70,14 +71,68 @@ async function update() {
     const lat = position.coords.latitude;
     const lon = position.coords.longitude;
     try {
-        const now = await getCurrentWeather(lat,lon);
-        $('location').textContent = await getLocationFromCoords(lat, lon);
+        const periods = await getCurrentWeather(lat,lon);
+        const now = periods[0];
+        $('location').textContent = locationName;
         $('currentTemp').textContent = `${now.temperature}°`;
         $('conditions').textContent = now.shortForecast;
         setFlag(flagFor(now.shortForecast));
+        renderHourlyForecast(periods.slice(0, 6));
     } catch (err) {
         console.error('Failed to fetch NWS weather data:', err);
     }
+}
+
+function iconFor(period) {
+    const condition = period.shortForecast.toLowerCase();
+    const isDaytime = period.isDaytime;
+    let filename;
+
+    if (/tornado|hurricane|blizzard|severe|warning/.test(condition)) {
+        filename = 'cloud-exclamation-point.png';
+    } else if (/thunder|lightning/.test(condition)) {
+        filename = 'cloud-lightning.png';
+    } else if (/snow|flurries/.test(condition)) {
+        filename = 'snowflake.png';
+    } else if (/rain|shower|drizzle|sleet|freezing|ice|wind/.test(condition)) {
+        filename = 'cloud-rain-wind.png';
+    } else if (/fog|mist|haze/.test(condition)) {
+        filename = 'cloud-fog.png';
+    } else if (/partly|mostly sunny/.test(condition)) {
+        filename = isDaytime ? 'cloud-sun.png' : 'cloud-moon.png';
+    } else if (/cloudy|overcast/.test(condition)) {
+        filename = 'cloud.png';
+    } else if (/sunny|clear|fair/.test(condition)) {
+        filename = isDaytime ? 'sun.png' : 'moon-star.png';
+    } else {
+        filename = isDaytime ? 'cloud-sun.png' : 'cloud-moon.png';
+    }
+
+    return `icons/${filename}`;
+}
+
+function renderHourlyForecast(periods) {
+    const hourlyBox = $('hourlyBox');
+    hourlyBox.replaceChildren(...periods.map(period => {
+        const item = document.createElement('div');
+        item.className = 'hourlyPeriod';
+
+        const icon = document.createElement('img');
+        icon.className = 'hourlyIcon';
+        icon.src = iconFor(period);
+        icon.alt = period.shortForecast;
+
+        const temperature = document.createElement('strong');
+        temperature.textContent = `${period.temperature}°`;
+
+        const hour = document.createElement('time');
+        hour.dateTime = period.startTime;
+        hour.textContent = new Date(period.startTime).toLocaleTimeString([], { hour: 'numeric' });
+
+
+        item.append(hour, icon, temperature);
+        return item;
+    }));
 }
 
 function clearFlag() {
@@ -93,12 +148,17 @@ async function getCurrentWeather(lat, lon) {
     if (!hourlyUrl) {
         const point = await fetch(`https://api.weather.gov/points/${lat},${lon}`, { headers });
         if (!point.ok) throw new Error(`Points API error: ${point.status}`);
-        hourlyUrl = (await point.json()).properties.forecastHourly;
+        const properties = (await point.json()).properties;
+        hourlyUrl = properties.forecastHourly;
+        const relativeLocation = properties.relativeLocation?.properties;
+        locationName = relativeLocation
+            ? [relativeLocation.city, relativeLocation.state].filter(Boolean).join(', ')
+            : 'Current Location';
     }
 
     const res = await fetch(hourlyUrl, { headers });
     if (!res.ok) throw new Error(`Forecast API error: ${res.status}`);
-    return (await res.json()).properties.periods[0];
+    return (await res.json()).properties.periods;
 }
 
 // Map NWS text (e.g. "Slight Chance Rain Showers") to a flag

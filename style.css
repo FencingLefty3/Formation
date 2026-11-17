@@ -17,6 +17,11 @@ body {
     padding: 0;
     margin: 0;
 
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    
     background-color: #3b5f8f;
 }
 img {
@@ -34,6 +39,73 @@ img {
     align-items: center;
     justify-content: center;
 }
+.hourlyBox {
+    width: 98dvw;
+    height: 20dvh;
+
+    margin: 0.4rem;
+
+    color: var(--blue);
+
+    position: relative;
+    overflow: hidden;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+.hourlyBox {
+    background: rgba(255, 255, 255, 0.25);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);  /* Safari */
+    backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+}
+
+@media (prefers-color-scheme: dark) {
+    .hourlyBox {
+        background: rgba(0, 0, 0, 0.35);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+}
+
+.hourlyPeriod {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0.25rem;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    text-align: center;
+}
+.hourlyPeriod + .hourlyPeriod {
+    border-left: 1px solid rgba(255, 255, 255, 0.2);
+}
+.hourlyIcon {
+    width: 2rem;
+    height: 2rem;
+}
+.hourlyPeriod strong {
+    font-size: 1.1rem;
+}
+.hourlyCondition {
+    font-size: 0.55rem;
+    font-weight: 400;
+    line-height: 1.1;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    margin: 0;
+    color: var(--blue);
+    display: block;
+    overflow-wrap: anywhere;
+}
+
 .tempBox > h2 {
     font-size: 4em;
     margin: 0;
@@ -74,6 +146,14 @@ img {
     margin: 0;
 }
 
+.tempBox h2 {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    transition: color 0.3s;
+}
+
+
 /* dark text on the yellow flag (covers location + conditions too) */
 .tempBox.darkText {
     color: #111;
@@ -85,19 +165,6 @@ ri {
     flex-direction: row;
     align-items: center;
     gap: 0.4rem;
-}
-
-.tempBox {
-    position: relative;
-    overflow: hidden;
-    /* your existing styles stay */
-}
-
-.tempBox h2 {
-    position: relative;
-    z-index: 1;
-    margin: 0;
-    transition: color 0.3s;
 }
 
 #flagBG {
