@@ -11,25 +11,91 @@
     --white: #f5f5f7;
     --black: #222;
 }
+html {
+    scrollbar-width: thin;
+    scrollbar-color: #3b5f8f #ffffff;
+}
+::-webkit-scrollbar {
+  width: 10px;  /* Vertical scrollbar width */
+  height: 10px; /* Horizontal scrollbar height */
+}
+
+::-webkit-scrollbar-track {
+  background: #ffffff;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--blue);
+  border-radius: 10px;
+  border: 2px solid #ffffff; /* Creates padding around the thumb */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--blue);
+}
 body {
-    height: 100dvh;
-    width: 100dvw;
+    min-height: 100dvh;
+    max-width: 100dvw;
     padding: 0;
     margin: 0;
-
+    
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: top;
+    justify-content: flex-start;
 
-    
-    background-color: #3b5f8f;
+    background: linear-gradient(
+        170deg in oklch,
+        oklch(35.78% 0.11923 266.749) 0%,
+        oklch(48.129% 0.10489 268.394) 35%,
+        oklch(52.336% 0.06339 253.736) 68%,
+        oklch(75.158% 0.05945 254.219) 100%
+    );
+
+    background-color: var(--blue);
 }
+ main {
+    display: flex;
+    flex-direction: column;
+ }
+@media (orientation: landscape) {
+  body {
+    flex-direction: row;
+    height: 100dvh;
+    overflow: hidden;
+  }
+  main#header {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    width: 30dvw;
+  }
+  main#content {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh; 
+    overflow-y: auto;
+    overflow-x: hidden; 
+    width: 70dvw;
+  }
+  
+
+  main#content > * {
+    flex-shrink: 0;
+  }
+
+  .tempBox {
+    height: 100% !important;
+  }
+}
+
 img {
     object-fit: contain;
     height: 80%;
 }
 .tempBox {
-    width: 100dvw;
+    width: 100%;
     height: 40dvh;
 
     color: var(--white);
@@ -40,12 +106,12 @@ img {
     justify-content: center;
 }
 .hourlyBox {
-    width: 98dvw;
+    width: 98%;
     height: 20dvh;
 
     margin: 0.4rem;
 
-    color: var(--blue);
+    color: var(--white);
 
     position: relative;
     overflow: hidden;
@@ -56,23 +122,37 @@ img {
     justify-content: center;
 }
 .hourlyBox {
-    background: rgba(255, 255, 255, 0.25);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);  /* Safari */
-    backdrop-filter: blur(24px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    -webkit-backdrop-filter: brightness(90%);  /* Safari */
+    backdrop-filter: brightness(90%);
     border-radius: 20px;
 }
-
-@media (prefers-color-scheme: dark) {
-    .hourlyBox {
-        background: rgba(0, 0, 0, 0.35);
-        border-color: rgba(255, 255, 255, 0.1);
-    }
+.forcastBox {
+    width: 98%;
+    min-height: 20dvh;
+    height: max-content;
+    margin: 0.4rem;
+    padding: 0.75rem 1rem;
+    box-sizing: border-box;
+    color: var(--white);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
 }
-
+.forcastBox {
+    -webkit-backdrop-filter: brightness(90%);  /* Safari */
+    backdrop-filter: brightness(90%);
+    border-radius: 20px;
+}
+.hourlyBox,
+.forcastBox {
+  width: calc(100% - 0.8rem); /* Exact fit with 0.4rem left/right margins */
+  margin: 0.4rem;
+}
 .hourlyPeriod {
     flex: 1;
-    min-width: 0;
+    max-width: 100%;
     height: 100%;
     padding: 0.25rem;
     box-sizing: border-box;
@@ -83,8 +163,36 @@ img {
     gap: 0.2rem;
     text-align: center;
 }
-.hourlyPeriod + .hourlyPeriod {
-    border-left: 1px solid rgba(255, 255, 255, 0.2);
+.dailyPeriod {
+    max-width: 100%;
+    padding: 0.55rem 0.25rem;
+    box-sizing: content-box;
+    display: grid;
+    grid-template-columns: minmax(4rem, 0.8fr) 2.5rem minmax(4rem, 2fr) auto;
+    align-items: center;
+    gap: 0.5rem;
+}
+.dailyPeriod + .dailyPeriod {
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+.dailyPeriod time {
+    text-align: left;
+}
+.dailyIcon {
+    width: 2rem;
+    height: 2rem;
+}
+.dailyCondition {
+    min-width: 0;
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+.dailyTemperatures {
+    white-space: nowrap;
+    text-align: right;
+    font-size: 0.8rem;
 }
 .hourlyIcon {
     width: 2rem;
@@ -93,17 +201,22 @@ img {
 .hourlyPeriod strong {
     font-size: 1.1rem;
 }
-.hourlyCondition {
-    font-size: 0.55rem;
-    font-weight: 400;
-    line-height: 1.1;
-    width: auto;
-    max-width: 100%;
-    height: auto;
-    margin: 0;
-    color: var(--blue);
-    display: block;
-    overflow-wrap: anywhere;
+@media (max-width: 520px) {
+    .dailyPeriod {
+        grid-template-columns: minmax(3.5rem, 0.8fr) 2rem minmax(3rem, 1fr) auto;
+        gap: 0.3rem;
+        padding: 0.45rem 0;
+    }
+
+    .dailyIcon {
+        width: 1.75rem;
+        height: 1.75rem;
+    }
+
+    .dailyCondition,
+    .dailyTemperatures {
+        font-size: 0.65rem;
+    }
 }
 
 .tempBox > h2 {
@@ -117,8 +230,11 @@ img {
     font-weight: 200;
 }
 .alertRow {
-    width: 100dvw;
+    width: 100%;
     height: 10dvh;
+
+    box-sizing: border-box;
+    padding: 0 0.8rem;
 
     color: var(--white);
     background-color: var(--black);
@@ -126,6 +242,52 @@ img {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    cursor: pointer;
+}
+.alertRow:hover {
+    opacity: 0.5;
+}
+.alertArrow {
+    width: 0.8rem;
+    height: 0.8rem;
+    flex: none;
+    margin: 0 0.5rem;
+    border-right: 0.4rem solid currentColor;
+    border-bottom: 0.4rem solid currentColor;
+    transform: rotate(-45deg);
+}
+dialog {
+    width: 100dvw;
+    height: 95dvh;
+
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+    font-weight: 200 !important;
+
+    color: var(--white);
+    background-color: var(--black);
+}
+dialog,
+dialog * {
+    text-transform: none;
+}
+strong {
+    font-weight: 900 !important;
+}
+
+dialog:open {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.alertDialogHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.alertDetails + .alertDetails {
+    border-top: 1px solid rgba(255, 255, 255, 0.25);
 }
 .tempBox {
     position: relative;
@@ -137,6 +299,9 @@ img {
     inset: 0;
     z-index: 0;
     transition: background 0.4s;
+
+    -webkit-backdrop-filter: brightness(90%); 
+    backdrop-filter: brightness(90%);
 }
 
 /* keep the text above the flag */
