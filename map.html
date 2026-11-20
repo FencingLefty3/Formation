@@ -2,17 +2,27 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8">
-    <link rel="preconnect" href="https://googleapis.com">
-    <link rel="preconnect" href="https://gstatic.com" crossorigin>
-    
-    <link rel="icon" href="formationLogo.png"/>
-    <link rel="stylesheet" href="style.css"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Formation · Locations</title>
+    <link rel="icon" href="formationLogo.png">
+    <link rel="stylesheet" href="style.css">
   </head>
-  <body>
-    <article id="currentLocation">
+  <body class="mapPage">
+    <main id="locations">
+      <header class="locHeader">
+        <a href="index.html" id="back" aria-label="Back">&lsaquo;</a>
+        <h1>Locations</h1>
+        <button id="editBtn" type="button">Edit</button>
+      </header>
 
-    </article>
-    
+      <div class="searchWrap">
+        <input id="searchInput" type="search" placeholder="Search for a city" autocomplete="off">
+        <ul id="results"></ul>
+      </div>
+
+      <ul id="locationList"></ul>
+    </main>
+
+    <script type="module" src="map.js"></script>
   </body>
-  <script type="module" src="index.js"></script>
 </html>

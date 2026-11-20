@@ -1,74 +1,11 @@
-const $ = (id) => document.getElementById(id);
+import {
+    $, paintFlag, flagFor, upcoming,
+    getHourly, getDaily, getActiveAlerts, resolveLocation, getSelectedId
+} from './weather.js';
 
 const tempBox = $('tempBox');
 const flagBG = $('flagBG');
-const dialog = $('alertDialog')
-
-let hourlyUrl = null;
-let dailyUrl = null;
-let locationName = '';
-
-
-
-const FLAG_COLORS = { green: '#1dd284', yellow: '#d2cc1d', red: '#d22c1d', blue: '#3b5f8f', white: '#f5f5f7', black: '#222' };
-
-const cache = {
-    get(key) {
-        try {
-            const raw = localStorage.getItem(key);
-            if (!raw) return null;
-            const { t, v } = JSON.parse(raw)
-            return { value: v, age: Date.now() - t }
-        } catch { return null }
-    },
-    set(key, value) {
-        try { localStorage.setItem(key, JSON.stringify({ t: Date.now(), v: value }))}
-        catch { }
-    }
-}
-
-const WEATHER_TTL = 10 * 60 * 1000;                
-const LONG_TTL    = 30 * 24 * 60 * 60 * 1000;
-
-const keyFor = (prefix, lat, lon) => `${prefix}:${lat.toFixed(2)},${lon.toFixed(2)}`;
-
-function getLocation() {
-  return new Promise((resolve, reject) => {
-    if (!("geolocation" in navigator)) {
-      reject("Geolocation not supported");
-    }
-    navigator.geolocation.getCurrentPosition(resolve, reject);
-  });
-}
-
-function doubleYellow() {
-    clearFlag();
-    tempBox.classList.add('doubleYellow');
-    flagBG.innerHTML = '<i></i><i></i>';
-
-    const [left, right] = flagBG.children;
-    const timing = { duration: 1000, iterations: Infinity };
-
-   
-    left.animate([
-        { opacity: 1,    easing: 'step-end' },
-        { opacity: 0, offset: 0.5, easing: 'step-end' },
-        { opacity: 1 }
-    ], timing);
-
-    right.animate([
-        { opacity: 0, easing: 'step-end' },
-        { opacity: 1,    offset: 0.5, easing: 'step-end' },
-        { opacity: 0 }
-    ], timing);
-}
-
-function setFlag(name) {
-    if (name === 'doubleYellow') return doubleYellow();
-    clearFlag();
-    flagBG.style.background = FLAG_COLORS[name];
-    tempBox.classList.toggle('darkText', name === 'yellow');
-}
+const dialog = $('alertDialog');
 
 function groupDailyPeriods(periods) {
     const days = [];
@@ -103,23 +40,30 @@ function groupDailyPeriods(periods) {
 
 async function update() {
     try {
-        const position = await getLocation();
-        const lat = '55.3773372';
-        const lon = '-131.7375108';
-        const periods = await getCurrentWeather(lat,lon);
-        const now = periods[0];
-        const dailyPeriods = await getDailyForecast();
-        $('location').textContent = locationName;
+        const { lat, lon, name } = await resolveLocation(getSelectedId())
+
+        const [hourly, daily, alerts] = await Promise.all([
+            getHourly(lat, lon),
+            getDaily(lat, lon),
+            getActiveAlerts(lat, lon).catch(() => null)
+        ])
+
+        const periods = upcoming(hourly)
+        const now = periods[0]
+
+        $('location').textContent = name;
         $('currentTemp').textContent = `${now.temperature}°`;
         $('conditions').textContent = now.shortForecast;
-        setFlag(flagFor(now.shortForecast));
-        renderHourlyForecast(periods.slice(0, 6));
-        render7DayForecast(groupDailyPeriods(dailyPeriods));
-        alertFor(await getActiveAlerts(lat, lon));
+        paintFlag(flagBG, tempBox, flagFor(now.shortForecast));
+        renderHourlyForecast(periods.slice(0, 12));
+        render7DayForecast(groupDailyPeriods(daily));
+        alertFor(alerts);
+
     } catch (err) {
         console.error('Failed to fetch NWS weather data:', err);
     }
 }
+
 function openAlert(alerts) {
     const title = document.createElement('h2')
     title.textContent = 'Weather Alerts';
@@ -349,74 +293,6 @@ function render7DayForecast(days) {
         item.append(date, icon, condition, temperatures);
         return item;
     }));
-}
-
-function clearFlag() {
-    flagBG.getAnimations({ subtree: true }).forEach(a => a.cancel());
-    flagBG.innerHTML = '';
-    flagBG.style.background = '';   // new: reset solid flag colors
-    tempBox.classList.remove('doubleYellow', 'darkText');
-}
-
-async function getCurrentWeather(lat, lon) {
-    const headers = { Accept: 'application/geo+json' };
-
-    if (!hourlyUrl) {
-        const point = await fetch(`https://api.weather.gov/points/${lat},${lon}`, { headers });
-        if (!point.ok) throw new Error(`Points API error: ${point.status}`);
-        const properties = (await point.json()).properties;
-        hourlyUrl = properties.forecastHourly;
-        dailyUrl = properties.forecast; 
-        const relativeLocation = properties.relativeLocation?.properties;
-        locationName = relativeLocation
-            ? [relativeLocation.city, relativeLocation.state].filter(Boolean).join(', ')
-            : 'Current Location';
-    }
-    const res = await fetch(hourlyUrl, { headers });
-    if (!res.ok) throw new Error(`Forecast API error: ${res.status}`);
-    return (await res.json()).properties.periods;
-}
-
-async function getActiveAlerts(lat, lon) {
-    const url = new URL(`https://api.weather.gov/alerts/active`);
-    url.searchParams.set('point', `${lat},${lon}`)
-
-    const response = await fetch(url, {
-        headers: { Accept: 'application/geo+json' }
-    });
-    if (!response.ok) throw new Error(`Alerts API error: ${response.status}`)
-    
-    const { features } = await response.json()
-    return features.map(({ properties }) => ({
-        event: properties.event,
-        headline: properties.headline,
-        severity: properties.severity,
-        urgency: properties.urgency,
-        senderName: properties.senderName,
-        area: properties.areaDesc,
-        effective: properties.effective || properties.onset,
-        expires: properties.expires || properties.ends,
-        description: properties.description,
-        instruction: properties.instruction
-
-    }))
-    
-}
-async function getDailyForecast() {
-    const response = await fetch(dailyUrl, {
-        headers: { Accept: 'application/geo+json' }
-    });
-    if (!response.ok) throw new Error(`Daily forecast error: ${response.status}`);
-
-    return (await response.json()).properties.periods;
-}
-// Map NWS text (e.g. "Slight Chance Rain Showers") to a flag
-function flagFor(shortForecast) {
-    const t = shortForecast.toLowerCase();
-    if (/thunder|tornado|hurricane|blizzard|ice storm/.test(t)) return 'red';
-    if (/heavy|freezing|sleet|snow|storm/.test(t)) return 'doubleYellow';
-    if (/rain|showers|drizzle|fog|haze|wind|mist/.test(t)) return 'yellow';
-    return 'green';
 }
 
 

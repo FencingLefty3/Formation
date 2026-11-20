@@ -11,24 +11,34 @@
     --white: #f5f5f7;
     --black: #222;
 }
-html {
+@supports (-moz-appearance: none) {
+  html {
     scrollbar-width: thin;
-    scrollbar-color: #3b5f8f #ffffff;
+    scrollbar-color: #3b5f8f #ffffff00;
+  }
 }
+
+/* 2. Chrome, Edge, and Safari will now use these rules */
 ::-webkit-scrollbar {
-  width: 10px;  /* Vertical scrollbar width */
-  height: 10px; /* Horizontal scrollbar height */
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 ::-webkit-scrollbar-track {
-  background: #ffffff;
-  border-radius: 10px;
+  background: #ffffff00;
+  border-radius: 15px;
 }
 
 ::-webkit-scrollbar-thumb {
   background-color: var(--blue);
-  border-radius: 10px;
-  border: 2px solid #ffffff; /* Creates padding around the thumb */
+  border-radius: 15px;
+  border: 1px solid #5073a0;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -88,6 +98,12 @@ body {
   .tempBox {
     height: 100% !important;
   }
+  .locHeader {
+    width: 90dvw;
+  }
+  #locations {
+        max-width: none !important;
+  }
 }
 
 img {
@@ -114,12 +130,13 @@ img {
     color: var(--white);
 
     position: relative;
-    overflow: hidden;
+    overflow-y: hidden;
+    overflow-x: auto;
 
     display: flex;
     flex-direction: row;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
 }
 .hourlyBox {
     -webkit-backdrop-filter: brightness(90%);  /* Safari */
@@ -153,6 +170,7 @@ img {
 .hourlyPeriod {
     flex: 1;
     max-width: 100%;
+    min-width: 16%;
     height: 100%;
     padding: 0.25rem;
     box-sizing: border-box;
@@ -271,17 +289,19 @@ dialog * {
 
 }
 button {
+    color: var(--white);
+}
+#map:hover {
+    background-color: var(--blue);
+}
+#map {
     background-color: var(--black);
     outline: none;
     border: solid var(--blue) 4px;
     border-radius: 100%;
     color: var(--white);
     cursor: pointer;
-}
-button:hover {
-    background-color: var(--blue);
-}
-#map {
+
     display: flex;
     align-items: center;
     justify-content: center;
@@ -357,16 +377,79 @@ ri {
 }
 
 #flagBG {
-    --angle: -20deg;   /* change to adjust the slant */
+    --angle: -20deg;  
 
     position: absolute;
-    inset: 0 -20%;     /* extend past the edges so the skew doesn't leave gaps */
+    inset: 0 -20%;    
     display: flex;
 
 }
 
-#flagBG i {
+
+.flagLayer i {
     flex: 1;
     background: #ffd800;
-    transform: skewX(var(--angle));
+    transform: skewX(var(--angle, -20deg));
 }
+
+/* locations page */
+body.mapPage {
+    display: block;
+    height: auto;
+    overflow-y: auto;      
+}
+#locations { max-width: 640px; margin: 0 auto; padding-bottom: 2rem; color: var(--white); }
+
+.locHeader { display: flex; align-items: center; justify-content: space-between; padding: 1rem; }
+.locHeader h1 { margin: 0; font-size: 1.1rem; }
+.locHeader a { color: inherit; text-decoration: none; font-size: 2rem; line-height: 1; }
+#editBtn { border: 0; border-radius: 0; background: none; font-size: 1rem; color: var(--white); }
+#editBtn:hover { background: none; opacity: 0.6; }
+
+.searchWrap { position: relative; margin: 0 1rem 1rem; }
+#searchInput {
+    width: 100%; box-sizing: border-box; padding: 0.8rem 1rem;
+    border: 0; border-radius: 12px; font-size: 1rem;
+    background: rgba(255, 255, 255, 0.2); color: var(--white);
+}
+#searchInput::placeholder { color: rgba(255, 255, 255, 0.6); }
+#results {
+    position: absolute; left: 0; right: 0; z-index: 5;
+    margin: 4px 0 0; padding: 0; list-style: none;
+    border-radius: 12px; overflow: hidden;
+    background: rgba(34, 34, 34, 0.9);
+    -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
+}
+#results button {
+    width: 100%; padding: 0.8rem 1rem; text-align: left;
+    border: 0; border-radius: 0; background: none; font-size: 1rem;
+}
+#results button:hover { background: var(--blue); }
+
+#locationList { list-style: none; margin: 0; padding: 0; }
+.locCard {
+    position: relative; overflow: hidden;
+    margin: 0 1rem 0.75rem; border-radius: 20px;
+    color: var(--white); background: rgba(0, 0, 0, 0.25);   /* shows until the flag loads */
+}
+.locCard.darkText { color: #111; }
+.locMain {
+    position: relative; z-index: 1; width: 100%;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1.1rem 1.25rem;
+    border: 0; border-radius: 0; background: none;
+    color: inherit; font: inherit; text-align: left;
+}
+.locMain:hover { background: none; opacity: 0.85; }   /* beats the global button:hover */
+.locName { display: block; font-size: 1.2rem; }
+.locCond { font-weight: 400; }
+.locTemp { font-size: 2.6rem; font-weight: 300; }
+
+.locDelete {
+    display: none; position: absolute; z-index: 2; top: 8px; right: 8px;
+    width: 28px; height: 28px; padding: 0;
+    border: 0; border-radius: 50%;
+    background: rgba(0, 0, 0, 0.55); color: var(--white);
+}
+.locDelete:hover { background: var(--red); }
+.editing .locDelete { display: block; }
