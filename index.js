@@ -127,11 +127,11 @@ function openAlert(alerts) {
     const close = document.createElement('button')
     close.type = 'button'
     close.textContent = 'X'
-    close.className = 'alertDialogClose'
+    close.className = 'alertdialogClose'
     close.addEventListener('click', () => dialog.close())
 
     const header = document.createElement('div');
-    header.className = 'alertDialogHeader';
+    header.className = 'alertdialogHeader';
     header.append(title, close);
 
     const cards = alerts.map(alert => {
@@ -424,6 +424,9 @@ dialog.addEventListener("click", (event) => {
   if (event.target === dialog) {
     dialog.close();
   }
+});
+$('map').addEventListener('click', () => {
+    location.href = 'map.html'
 });
 update();
 setInterval(update, 10 * 60 * 1000); // refresh every 10 min
