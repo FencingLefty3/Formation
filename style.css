@@ -315,9 +315,6 @@ button {
 strong, h2 {
     font-weight: 900 !important;
 }
-article {
-
-}
 dialog:open {
     display: flex;
     flex-direction: column;
@@ -380,7 +377,7 @@ ri {
     --angle: -20deg;  
 
     position: absolute;
-    inset: 0 -20%;    
+    inset: 0 -40%;    
     display: flex;
 
 }
