@@ -288,6 +288,41 @@ dialog * {
     font-weight: 300 !important;
 
 }
+#noLocation {
+    all: unset;
+
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 4;
+
+    width: 100dvw;
+    height: 100dvh;
+
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    -webkit-backdrop-filter: blur(5px); 
+    backdrop-filter: blur(5px);
+}
+#noLocation:open {
+    display: flex;
+} 
+#noLocation > p {
+    color: var(--white);
+    margin: 0;
+    font-size: 3rem;
+    font-weight: 500 !important;
+}
+#noLocation > a {
+    color: var(--white);
+    margin: 0;
+    font-size: 1.5rem;
+    outline: none;
+    font-weight: 200 !important;
+}
 button {
     color: var(--white);
 }
@@ -450,3 +485,74 @@ body.mapPage {
 }
 .locDelete:hover { background: var(--red); }
 .editing .locDelete { display: block; }
+.compoundBox {
+    width: calc(100% - 0.8rem);
+    margin: 0.4rem;
+    padding: 0.75rem 1rem;
+    box-sizing: border-box;
+    color: var(--white);
+    -webkit-backdrop-filter: brightness(90%);
+    backdrop-filter: brightness(90%);
+    border-radius: 20px;
+}
+.compoundBox[hidden] { display: none; }
+
+.compoundTitle {
+    margin: 0 0 0.75rem;
+    text-align: center;
+}
+
+.compoundRow { display: flex; justify-content: space-around; }
+
+.compound {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    opacity: 0.6;
+    transition: opacity 0.3s;
+}
+.compound.active { opacity: 1; }
+
+.tyre {
+    width: 3.4rem;
+    aspect-ratio: 1;
+    box-sizing: border-box;
+    display: grid;
+    place-items: center;
+    font-size: 1.3rem;
+    border-radius: 50%;
+    border: 0.45rem solid var(--ring);
+    background: radial-gradient(circle, #2a2a2a 0 55%, #111 56%);
+}
+.compound em {
+    font-style: normal;
+    font-size: 0.65rem;
+    font-weight: 400;
+    white-space: pre-line;
+    min-height: 2.2em;
+    text-align: center;
+}
+footer {
+    width: calc(100% - 0.8rem);
+    margin: 0.4rem;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0 !important;
+    padding: 0.75rem 1rem;
+    box-sizing: border-box;
+    color: var(--white);
+    font-size: 1rem;
+    text-transform: none !important;
+    -webkit-backdrop-filter: brightness(90%);
+    backdrop-filter: brightness(90%);
+    border-radius: 20px 20px 0 0;
+}
+footer > a {
+    text-transform: none !important;
+    color: inherit;
+    text-decoration: none;
+    opacity: 0.6;
+}

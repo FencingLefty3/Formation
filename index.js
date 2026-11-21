@@ -1,6 +1,7 @@
 import {
-    $, paintFlag, flagFor, upcoming,
-    getHourly, getDaily, getActiveAlerts, resolveLocation, getSelectedId
+    $, paintFlag, flagFor, upcoming, COMPOUNDS, compoundFor,
+    getHourly, getDaily, getActiveAlerts, resolveLocation, getCachedLocation, getSelectedId,
+    BANDS
 } from './weather.js';
 
 const tempBox = $('tempBox');
@@ -18,6 +19,7 @@ function groupDailyPeriods(periods) {
                 high: period.temperature,
                 low: null,
                 shortForecast: period.shortForecast,
+                detailedForecast: period.detailedForecast,
                 isDaytime: true
             });
         } else if (days.length) {
@@ -30,6 +32,7 @@ function groupDailyPeriods(periods) {
                 high: null,
                 low: period.temperature,
                 shortForecast: period.shortForecast,
+                detailedForecast: period.detailedForecast,
                 isDaytime: false
             });
         }
@@ -39,29 +42,61 @@ function groupDailyPeriods(periods) {
 }
 
 async function update() {
+    const selectedId = getSelectedId();
+    const cachedLocation = getCachedLocation(selectedId);
+    let renderedFromCache = false;
+
+    if (cachedLocation) {
+        try {
+            await renderWeather(cachedLocation);
+            renderedFromCache = true;
+        } catch (err) {
+            console.warn('Could not load cached weather:', err);
+        }
+    }
+
     try {
-        const { lat, lon, name } = await resolveLocation(getSelectedId())
-
-        const [hourly, daily, alerts] = await Promise.all([
-            getHourly(lat, lon),
-            getDaily(lat, lon),
-            getActiveAlerts(lat, lon).catch(() => null)
-        ])
-
-        const periods = upcoming(hourly)
-        const now = periods[0]
-
-        $('location').textContent = name;
-        $('currentTemp').textContent = `${now.temperature}°`;
-        $('conditions').textContent = now.shortForecast;
-        paintFlag(flagBG, tempBox, flagFor(now.shortForecast));
-        renderHourlyForecast(periods.slice(0, 12));
-        render7DayForecast(groupDailyPeriods(daily));
-        alertFor(alerts);
-
+        const location = await resolveLocation(selectedId);
+        if (!cachedLocation || !sameLocation(cachedLocation, location) || !renderedFromCache) {
+            await renderWeather(location);
+        }
     } catch (err) {
         console.error('Failed to fetch NWS weather data:', err);
+        if (!renderedFromCache) $('noLocation').showModal();
     }
+}
+
+async function renderWeather(location) {
+    const [hourly, daily] = await Promise.all([
+        getHourly(location.lat, location.lon),
+        getDaily(location.lat, location.lon)
+    ]);
+
+    const periods = upcoming(hourly);
+    const now = periods[0];
+    if (!now) throw new Error('No current hourly forecast is available.');
+
+    const days = groupDailyPeriods(daily);
+    $('location').textContent = location.name;
+    $('currentTemp').textContent = `${now.temperature}°`;
+    $('conditions').textContent = now.shortForecast;
+    paintFlag(flagBG, tempBox, flagFor(now.shortForecast));
+    renderHourlyForecast(periods.slice(0, 12));
+    render7DayForecast(days);
+    renderDayCompound(days);
+    renderEngineerBox(days)
+
+    getActiveAlerts(location.lat, location.lon)
+        .then(alertFor)
+        .catch(err => {
+            console.error('Failed to fetch active alerts:', err);
+            alertFor(null);
+        });
+}
+
+function sameLocation(first, second) {
+    return Number(first.lat).toFixed(2) === Number(second.lat).toFixed(2)
+        && Number(first.lon).toFixed(2) === Number(second.lon).toFixed(2);
 }
 
 function openAlert(alerts) {
@@ -263,6 +298,86 @@ function renderHourlyForecast(periods) {
         item.append(hour, icon, temperature);
         return item;
     }));
+}
+function renderDayCompound(days) {
+    const box = $('compoundBox');
+    const today = days[0]
+
+    const high = today?.high ?? today?.low ?? null
+    const low = today?.low  ?? today?.high ?? null
+
+    const avrg = (high + low) / 2
+    const avrgCompound = compoundFor(avrg);
+    const lowCompound = compoundFor(low);
+    const highCompound = compoundFor(high);
+    
+    const Compound = avrgCompound || lowCompound || highCompound
+
+    console.log(Compound)
+
+    const row = document.createElement('div');
+    row.className = 'compoundRow';
+
+    const title = document.createElement('h3');
+    title.className = 'compoundTitle';
+    title.textContent = "Today's compounds";
+
+    row.append(...[...BANDS].reverse().map(c => {
+        
+        if (Compound.id == c.id) {
+            var COMPOUND = COMPOUNDS[1]
+            var active = true
+        } else if (Compound.id == c.id - 1) {
+            var COMPOUND = COMPOUNDS[2]
+            var active = true
+        } else if (Compound.id == c.id + 1) {
+            var COMPOUND = COMPOUNDS[0]
+            var active = true
+        } else {
+            var active = false
+        }
+
+        const item = document.createElement('div');
+        item.className = 'compound';
+        item.classList.toggle('active', active);
+        item.style.setProperty('--ring', COMPOUND ? COMPOUND.ring : 'rgba(255, 255, 255, 0.35)');
+
+        const tyre = document.createElement('span');
+        tyre.className = 'tyre';
+        tyre.textContent = c.label;
+
+        const name = document.createElement('small');
+        name.textContent = COMPOUND ? COMPOUND.label : '';
+
+        const marks = [];
+        if (c === lowCompound) marks.push(`Low ${low}°`);
+        if (c === highCompound) marks.push(`High ${high}°`);
+        const tag = document.createElement('em');
+        tag.textContent = marks.join('\n');
+
+        item.append(tyre, name, tag);
+        return item;
+    }));
+    box.hidden = false
+    box.replaceChildren(title, row);
+}
+
+function renderEngineerBox(days) {
+    const box = $('engineerBox');
+    const today = days[0]
+    const detailedForecast = today.detailedForecast
+
+    const title = document.createElement('h3');
+    title.className = 'compoundTitle';
+    title.textContent = "Weather Engineer";
+
+    const text = document.createElement('span');
+    text.className = 'dailyCondition';
+    text.textContent = detailedForecast;
+
+    box.replaceChildren(title, text)
+    box.hidden = false
+    console.log(detailedForecast) 
 }
 
 function render7DayForecast(days) {

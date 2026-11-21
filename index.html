@@ -24,15 +24,21 @@
         <div class="forcastBox" id="forcastBox">
 
         </div>
-        <div class="forcastBox" id="forcastBox">
+        <div class="compoundBox" id="compoundBox" hidden>
 
         </div>    
-        <div class="forcastBox" id="forcastBox">
+        <div class="compoundBox" id="engineerBox" hidden>
 
-        </div> 
+        </div>
+        <footer>
+            US weather info via&nbsp;<a href="https://weather.gov"> weather.gov</a>
+        </footer>
     </main>
     <dialog id="alertDialog">
 
+    </dialog>
+    <dialog id="noLocation">
+        <img src="icons/noLocation.svg" style="width: 8rem; height: 8rem;"><p>No Location Data</p><a href="" onclick="window.location.reload(); return false;">Refresh</a>
     </dialog>
     <button id="map"><img src="icons/map.svg"></button>
 </body>

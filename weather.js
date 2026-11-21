@@ -4,6 +4,24 @@ export const FLAG_COLORS = {
     green: '#1dd284', yellow: '#d2cc1d', red: '#d22c1d',
     blue: '#3b5f8f', white: '#f5f5f7', black: '#222'
 };
+export const BANDS = [
+    { id: 1, label: 'C1', max: 15 },
+    { id: 2, label: 'C2', max: 32 },
+    { id: 3, label: 'C3', max: 44 },
+    { id: 4, label: 'C4', max: 69 },
+    { id: 5, label: 'C5', max: Infinity }
+]
+
+export const COMPOUNDS = [
+    { id: 'hard', ring: 'var(--white)', label: 'Hard', letter: 'H', max: 1 },
+    { id: 'med', ring: 'var(--yellow)', label: 'Medium', letter: 'M', max: 2 },
+    { id: 'soft', ring: 'var(--red)', label: 'Soft', letter: 'S', max: 3 }
+]
+
+const BY_MAX = [...BANDS].sort((a, b) => a.max - b.max);   // c1, c2, c3...
+
+export const compoundFor = (temp) =>
+    temp == null ? null : BY_MAX.find(c => temp <= c.max);
 
 const cache = {
     get(key) {
@@ -24,6 +42,8 @@ const WEATHER_TTL = 10 * 60 * 1000;
 const LONG_TTL = 30 * 24 * 60 * 60 * 1000;
 const NWS_HEADERS = { Accept: 'application/geo+json' };
 const keyFor = (prefix, lat, lon) => `${prefix}:${Number(lat).toFixed(2)},${Number(lon).toFixed(2)}`;
+const LS_CURRENT_LOCATION = 'formation:current-location';
+const pendingForecasts = new Map();
 
 /* ---------- geolocation ---------- */
 export function getLocation() {
@@ -61,20 +81,29 @@ async function cachedForecast(prefix, urlKey, lat, lon) {
     const cached = cache.get(key);
     if (cached && cached.age < WEATHER_TTL) return cached.value;
 
-    try {
-        const info = await getGridInfo(lat, lon);
-        const res = await fetch(info[urlKey], { headers: NWS_HEADERS });
-        if (!res.ok) throw new Error(`Forecast API error: ${res.status}`);
-        const periods = (await res.json()).properties.periods;
-        cache.set(key, periods);
-        return periods;
-    } catch (err) {
-        if (cached) {                       // offline or API hiccup: show the old data
-            console.warn('Using stale cache:', err);
-            return cached.value;
-        }
-        throw err;
+    let request = pendingForecasts.get(key);
+    if (!request) {
+        request = (async () => {
+            const info = await getGridInfo(lat, lon);
+            const res = await fetch(info[urlKey], { headers: NWS_HEADERS });
+            if (!res.ok) throw new Error(`Forecast API error: ${res.status}`);
+            const periods = (await res.json()).properties.periods;
+            cache.set(key, periods);
+            return periods;
+        })();
+        pendingForecasts.set(key, request);
+        request.then(
+            () => pendingForecasts.delete(key),
+            () => pendingForecasts.delete(key)
+        );
     }
+
+    if (cached) {
+        request.catch(err => console.warn('Forecast refresh failed; showing cached data:', err));
+        return cached.value;
+    }
+
+    return request;
 }
 
 export const getHourly = (lat, lon) => cachedForecast('hourly', 'hourlyUrl', lat, lon);
@@ -123,6 +152,7 @@ export function flagFor(shortForecast) {
     if (/ice|/)
     return 'green';
 }
+
 
 // layer = the .flagLayer element, box = the element whose text color should adapt
 export function paintFlag(layer, box, name) {
@@ -174,6 +204,17 @@ export function setSelectedId(id) {
     try { localStorage.setItem(LS_SELECTED, id); } catch { }
 }
 
+export function getCachedLocation(id) {
+    if (id !== 'current') {
+        return getSaved().find(loc => loc.id === id) || null;
+    }
+    try {
+        const location = JSON.parse(localStorage.getItem(LS_CURRENT_LOCATION));
+        if (Number.isFinite(location?.lat) && Number.isFinite(location?.lon)) return location;
+    } catch { }
+    return null;
+}
+
 // id is 'current' (GPS) or a saved location's id -> { lat, lon, name }
 export async function resolveLocation(id) {
     if (id !== 'current') {
@@ -183,5 +224,7 @@ export async function resolveLocation(id) {
     }
     const { coords } = await getLocation();
     const { latitude: lat, longitude: lon } = coords;
-    return { lat, lon, name: await getPlace(lat, lon) };
+    const location = { lat, lon, name: await getPlace(lat, lon) };
+    try { localStorage.setItem(LS_CURRENT_LOCATION, JSON.stringify(location)); } catch { }
+    return location;
 }
