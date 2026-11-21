@@ -545,6 +545,7 @@ footer {
     box-sizing: border-box;
     color: var(--white);
     font-size: 1rem;
+    font-weight: 300;
     text-transform: none !important;
     -webkit-backdrop-filter: brightness(90%);
     backdrop-filter: brightness(90%);
