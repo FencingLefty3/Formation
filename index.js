@@ -191,7 +191,6 @@ function formatAlertDate(value) {
     return value ? new Date(value).toLocaleString() : '';
 }
 function alertFor(alerts) {
-    console.log(alerts)
     const main = $('header');
 
     main.querySelectorAll('#activeAlert, .activeAlert')
@@ -313,7 +312,6 @@ function renderDayCompound(days) {
     
     const Compound = avrgCompound || lowCompound || highCompound
 
-    console.log(Compound)
 
     const row = document.createElement('div');
     row.className = 'compoundRow';
@@ -377,7 +375,6 @@ function renderEngineerBox(days) {
 
     box.replaceChildren(title, text)
     box.hidden = false
-    console.log(detailedForecast) 
 }
 
 function render7DayForecast(days) {
