@@ -1,28 +1,35 @@
 const CACHE_NAME = 'slatelite-cache-v3';
 const APP_SHELL = [
-  './index.html',
-  './map.html',
-  './style.css',
-  './manifest.json',
-  './index.js',
-  './weather.js',
-  './map.js',
-  './icons/square-pen.png',
-  './icons/arrow-up.svg',
-  './icons/180.png',
-  './icons/256.png',
-  './icons/trash.svg',
-  './icons/square-pen.svg',
-  './icons/search.svg',
-  './icons/funnel.svg',
-  './icons/database-arrow-down.svg',
-  './icons/tags/all.svg',
-  './icons/tags/info.svg',
-  './icons/tags/star.svg',
-  './icons/tags/tally-2.svg',
-  './icons/tags/tally-3.svg',
-  './icons/tags/tally-4.svg',
-  './icons/circle-user-round.svg'
+    './',
+    './index.html',
+    './map.html',
+    './style.css',
+    './manifest.json',
+    './index.js',
+    './weather.js',
+    './map.js',
+
+    // Branding
+    './formationLogo.png',
+    './formationLogoWhite.png',
+    './180.png',
+    './256.png',
+
+    // Icons
+    './icons/square-pen.png',
+    './icons/arrow-up.svg',
+    './icons/trash.svg',
+    './icons/square-pen.svg',
+    './icons/search.svg',
+    './icons/funnel.svg',
+    './icons/database-arrow-down.svg',
+    './icons/tags/all.svg',
+    './icons/tags/info.svg',
+    './icons/tags/star.svg',
+    './icons/tags/tally-2.svg',
+    './icons/tags/tally-3.svg',
+    './icons/tags/tally-4.svg',
+    './icons/circle-user-round.svg'
 ];
 
 self.addEventListener('install', function (event) {
