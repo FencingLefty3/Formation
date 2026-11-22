@@ -1,4 +1,6 @@
-const CACHE_NAME = 'slatelite-cache-v3';
+
+const CACHE_NAME = 'formation-cache-v4';
+
 const APP_SHELL = [
     './',
     './index.html',
@@ -32,57 +34,75 @@ const APP_SHELL = [
     './icons/circle-user-round.svg'
 ];
 
-self.addEventListener('install', function (event) {
-  console.log('Service Worker installing.');
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(function (cache) {
-      return cache.addAll(APP_SHELL);
-    }).then(function () {
-      return self.skipWaiting();
-    })
-  );
+self.addEventListener('install', event => {
+    console.log('Formation: Installing service worker.');
+
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then(cache => cache.addAll(APP_SHELL))
+            .then(() => self.skipWaiting())
+    );
 });
 
-self.addEventListener('activate', function (event) {
-  console.log('Service Worker activating.');
-  event.waitUntil(
-    caches.keys().then(function (keys) {
-      return Promise.all(
-        keys
-          .filter(function (key) {
-            return key !== CACHE_NAME;
-          })
-          .map(function (key) {
-            return caches.delete(key);
-          })
-      );
-    }).then(function () {
-      return self.clients.claim();
-    })
-  );
+self.addEventListener('activate', event => {
+    console.log('Formation: Activating service worker.');
+
+    event.waitUntil(
+        caches.keys()
+            .then(keys => Promise.all(
+                keys
+                    .filter(key =>
+                        key.startsWith('formation-cache-') &&
+                        key !== CACHE_NAME
+                    )
+                    .map(key => caches.delete(key))
+            ))
+            .then(() => self.clients.claim())
+    );
 });
 
-self.addEventListener('fetch', function (event) {
-  if (event.request.method !== 'GET' || !['http:', 'https:'].includes(new URL(event.request.url).protocol)) {
-    return;
-  }
+self.addEventListener('fetch', event => {
+    const request = event.request;
+    const url = new URL(request.url);
 
-  event.respondWith(
-    fetch(event.request)
-      .then(function (response) {
-        if (response && response.ok) {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then(function (cache) {
-            cache.put(event.request, responseClone);
-          });
-        }
-        return response;
-      })
-      .catch(function () {
-        return caches.match(event.request).then(function (cachedResponse) {
-          return cachedResponse || caches.match('./index.html');
-        });
-      })
-  );
+    if (
+        request.method !== 'GET' ||
+        url.origin !== self.location.origin
+    ) {
+        return;
+    }
+
+    event.respondWith(
+        caches.match(request).then(cachedResponse => {
+            if (cachedResponse) {
+                return cachedResponse;
+            }
+
+            return fetch(request)
+                .then(response => {
+                    if (response && response.ok) {
+                        const responseClone = response.clone();
+
+                        event.waitUntil(
+                            caches.open(CACHE_NAME)
+                                .then(cache =>
+                                    cache.put(request, responseClone)
+                                )
+                        );
+                    }
+
+                    return response;
+                })
+                .catch(() => {
+                    if (request.mode === 'navigate') {
+                        return caches.match('./index.html');
+                    }
+
+                    return new Response('Offline', {
+                        status: 503,
+                        statusText: 'Service Unavailable'
+                    });
+                });
+        })
+    );
 });
-
