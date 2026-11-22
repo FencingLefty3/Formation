@@ -312,13 +312,25 @@ function renderDayCompound(days) {
     
     const Compound = avrgCompound || lowCompound || highCompound
 
-
+    const titlerow = document.createElement('div');
+    titlerow.className = 'compoundRow';
+    titlerow.style.alignItems = 'center'
     const row = document.createElement('div');
     row.className = 'compoundRow';
+
+    const lowTitle = document.createElement('small');
+    lowTitle.className = 'compoundTitle';
+    lowTitle.textContent = "Lightest";
+    lowTitle.style.opacity = '0.6'
 
     const title = document.createElement('h3');
     title.className = 'compoundTitle';
     title.textContent = "Today's compounds";
+
+    const highTitle = document.createElement('small');
+    highTitle.className = 'compoundTitle';
+    highTitle.textContent = "Heaviest";
+    highTitle.style.opacity = '0.6'
 
     row.append(...[...BANDS].reverse().map(c => {
         
@@ -357,7 +369,8 @@ function renderDayCompound(days) {
         return item;
     }));
     box.hidden = false
-    box.replaceChildren(title, row);
+    titlerow.replaceChildren(lowTitle, title, highTitle)
+    box.replaceChildren(titlerow, row);
 }
 
 function renderEngineerBox(days) {
