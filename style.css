@@ -170,7 +170,7 @@ img {
 .hourlyPeriod {
     flex: 1;
     max-width: 100%;
-    min-width: 16%;
+    min-width: 20%;
     height: 100%;
     padding: 0.25rem;
     box-sizing: border-box;
