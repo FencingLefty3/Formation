@@ -1,7 +1,7 @@
 {
     "short_name": "Formation",
-    "name": "Formation",
-    "description": "Formation weather. F1 inspired weather app.",
+    "name": "Formation Weather",
+    "description": "F1 inspired weather app.",
     "icons": [
         {
             "src": "256.png",
